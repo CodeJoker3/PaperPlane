@@ -29,7 +29,6 @@ HBITMAP hbmpPaperPlane;
 HBITMAP hbmpCloud;
 HBITMAP hbmpBackground;
 
-LONG FightWindowPaint(HWND hwnd);
 //*********************************************************
 int WINAPI WinMain(
 	HINSTANCE hinstance,
@@ -485,6 +484,7 @@ LONG CloudsPaint(HWND hwnd)
 
 	hdc = GetDC(hwnd);
 	mdc = CreateCompatibleDC(hdc);
+	GetObject(hbmpCloud, sizeof(BITMAP), &bmp);
 
 	HBRUSH hbrBomb;	//±¬Õ¨Ð§¹û
 	hbrBomb = CreateSolidBrush(COLOR_BOMB);
