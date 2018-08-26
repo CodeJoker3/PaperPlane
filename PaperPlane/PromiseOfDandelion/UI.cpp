@@ -17,7 +17,7 @@
 #define COLOR_CLOUD RGB(0,255,0)
 
 POINT ptPaperplane;
-DWORD dwTimerElapse = 40;	//时间单位间隔，单位毫米
+DWORD dwTimerElapse = 40;	//时间单位间隔，单位毫秒
 
 HINSTANCE hinst;
 
@@ -92,7 +92,7 @@ int WINAPI WinMain(
 	
 
 	//消息循环
-	while ( GetMessage(&msg, NULL, 0, 0) !=0|| GetMessage(&msg, NULL, 0, 0) != -1)
+	while (GetMessage(&msg, NULL, 0, 0) != -1 && GetMessage(&msg, NULL, 0, 0) != 0)
 	{
 		TranslateMessage(&msg);
 		DispatchMessage(&msg);
@@ -109,8 +109,6 @@ LRESULT CALLBACK MainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	case WM_CREATE:
 		BackgroundCreate(hwnd);	//初始化背景
 		SetFocus(hwnd);	  //将键盘焦点设置为主窗口
-		PostMessage(hwnd, WM_LBUTTONDOWN, 0, (DWORD)0x0050050);
-		PostMessage(hwnd, WM_LBUTTONUP, 0, (DWORD)0x0050050);
 		break;
 	// 所有使用GDI在窗口上绘制图形的程序都 “必须” 写在这里。
 	// 如果不是在WM_PAINT消息的处理过程中绘制GDI图形，那么在窗口刷新时就会被新被抹除和覆盖
@@ -165,10 +163,13 @@ LONG BackgroundCreate(HWND hwnd)
 	MoveWindow(hwnd, 100, 100, MAX_X, MAX_Y, TRUE);	//改变窗口位置和尺寸
 
 	//设置纸飞机的初始位置
-	ptPaperplane.x = MAX_X-PAPERPLANE_WIDTH;
+	ptPaperplane.x = PAPERPLANE_WIDTH;
 	ptPaperplane.y = MAX_Y / 2;
 
 	SetFocus(hwnd);
+	//创建列表
+	flys_init();
+	SetTimer(hwnd, TIMER_ID, dwTimerElapse, NULL);
 
 	return 0;
 }
@@ -252,7 +253,7 @@ LONG PaperplaneWindowCreate(HINSTANCE hinstance)
 		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,	//窗口的左上角的X和Y坐标，宽度和高度
 		NULL, NULL, hinstance, NULL	//父窗口句柄，菜单处理，应用程序实例句柄，窗口创建数据的指针
 	);
-	if (hwndPaperPlane == NULL)
+	if (!hwndPaperPlane)
 	{
 		MessageBox(NULL, "窗口创建失败", "错误！", MB_ICONERROR | MB_OK);
 		return -1;
@@ -283,7 +284,6 @@ LRESULT CALLBACK FlysProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	case WM_LBUTTONDOWN:
 		break;
 	case WM_TIMER:
-		FlysTimer(hwnd);
 		FlysPaint(hwnd);
 	case WM_DESTROY:
 		PostQuitMessage(0);
@@ -303,11 +303,6 @@ LONG FlysCreate(HWND hwnd)
 			MB_OK | MB_ICONERROR);
 		ExitProcess(0);
 	}
-
-	flys_init();
-	SetTimer(hwnd, TIMER_ID, dwTimerElapse, NULL);
-
-	SetFocus(hwnd);
 
 	return 0;
 }
@@ -334,13 +329,13 @@ LONG FlysPaint(HWND hwnd)
 
 	FillRect(mdc, &rect, (HBRUSH)GetStockObject(NULL_BRUSH));	//填充矩形
 
-	TransparentBlt(mdc,
+	StretchBlt(hdc,
 		ptPaperplane.x-PAPERPLANE_WIDTH,ptPaperplane.y - PAPERPLANE_HEIGHT / 2,
 		PAPERPLANE_WIDTH, PAPERPLANE_HEIGHT,
-		mdc_,
+		mdc,
 		0, 0, bmp.bmWidth, bmp.bmHeight,
-		RGB(255,255,255));
-
+		SRCCOPY);
+	
 	//画子弹
 	HBRUSH hbrBullet;
 
@@ -365,8 +360,6 @@ LONG FlysPaint(HWND hwnd)
 		}
 	}
 
-
-
 	//拷贝到DC
 	BitBlt(hdc,
 		rect.left, rect.top,
@@ -377,7 +370,7 @@ LONG FlysPaint(HWND hwnd)
 
 	DeleteObject(hbrBullet);
 	DeleteObject(hBitmap);
-
+	
 	DeleteDC(mdc_);
 	DeleteDC(mdc);
 	ReleaseDC(hwnd, hdc);
@@ -434,9 +427,6 @@ LONG CloudWindowCreate(HINSTANCE hinstance)
 }
 LRESULT CALLBACK CloudsProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
-	//PAINTSTRUCT ps;
-	//RECT rect;
-	// 注意，是switch-case, 每次这个函数被调用，只会落入到一个case中。
 	switch (msg)
 	{
 	case WM_CREATE:
@@ -450,7 +440,7 @@ LRESULT CALLBACK CloudsProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	case WM_LBUTTONDOWN:
 		break;
 	case WM_TIMER:
-		FlysTimer(hwnd);
+		CloudsTimer(hwnd);
 		CloudsPaint(hwnd);
 		break;
 	case WM_DESTROY:
@@ -514,8 +504,8 @@ LONG CloudsPaint(HWND hwnd)
 			{
 				SelectObject(mdc, hbmpCloud);
 				TransparentBlt(hdc,
-					ptPaperplane.x - PAPERPLANE_WIDTH, ptPaperplane.y - PAPERPLANE_HEIGHT / 2,
-					PAPERPLANE_WIDTH, PAPERPLANE_HEIGHT,
+					get_fly_x(auto_fly)-25, get_fly_y(auto_fly)-25,
+					50, 50,
 					mdc,
 					0, 0, bmp.bmWidth, bmp.bmHeight,
 					RGB(255, 255, 255));
@@ -538,10 +528,10 @@ LONG CloudsPaint(HWND hwnd)
 	return 0;
 }
 
-LONG FlysTimer(HWND hwnd)
+LONG CloudsTimer(HWND hwnd)
 {
-	destory_fly_by_state();	//如果链表节点（自动飞行物）出界或者被击中，销毁该节点
 	flys_move_step();	//	判断并标记自动飞行物状态
+	destory_fly_by_state();	//如果链表节点（自动飞行物）出界或者被击中，销毁该节点
 
 	if (rand() % 1000 < 100) // 随机产生云朵
 	{
@@ -561,11 +551,10 @@ LONG OnKeydown(HWND hwnd, UINT vk)
 	case VK_RIGHT:
 	case VK_UP:
 	case VK_DOWN:
-	case 'S':
-		if (HIWORD(GetKeyState('S')))
+	case 's':
+		if (HIWORD(GetKeyState('s')))
 		{
 			gen_bullet(ptPaperplane.x, ptPaperplane.y);
-			//PlaySound("C:\\Windows\\Media\\ir_end.wav", NULL, SND_FILENAME);
 		}
 		if (HIWORD(GetKeyState(VK_LEFT)))
 		{

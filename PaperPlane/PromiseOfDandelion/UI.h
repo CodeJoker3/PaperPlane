@@ -18,6 +18,6 @@ LRESULT CALLBACK CloudsProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 LONG CloudsCreate(HWND hwnd);
 LONG CloudsPaint(HWND hwnd);
 
-LONG FlysTimer(HWND hwnd);
+LONG CloudsTimer(HWND hwnd);
 
 LONG OnKeydown(HWND hwnd, UINT vk);
