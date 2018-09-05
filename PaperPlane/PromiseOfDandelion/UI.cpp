@@ -4,7 +4,10 @@
 #include "UI.h"
 #include "LinkList.h"
 //*********************************************************
-#define TIMER_ID 12340
+#define TIMER_ID1 1
+#define TIMER_ID2 2
+#define TIMER_ID3 3
+
 #define PAPERPLANE_HEIGHT 50	//纸飞机的高度
 #define PAPERPLANE_WIDTH 50		//纸飞机的宽度
 #define CLOUD_WIDTH 50	//云的宽度
@@ -39,7 +42,7 @@ int WINAPI WinMain(
 {
 	WNDCLASSEX wc;	//创建窗口类
 	MSG msg;	//消息句柄
-
+	BOOL f;
 	//注册窗口类
 	wc.cbSize = sizeof(WNDCLASSEX);
 	wc.style = CS_HREDRAW | CS_VREDRAW;
@@ -92,7 +95,7 @@ int WINAPI WinMain(
 	
 
 	//消息循环
-	while (GetMessage(&msg, NULL, 0, 0) != -1 && GetMessage(&msg, NULL, 0, 0) != 0)
+	while (f = GetMessage(&msg, NULL, 0, 0) != -1 && f != 0)
 	{
 		TranslateMessage(&msg);
 		DispatchMessage(&msg);
@@ -117,12 +120,6 @@ LRESULT CALLBACK MainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		break;
 	case WM_MOVING:
 		BackgroundResizeAndMove(hwnd,(LPRECT)lParam);	//调整窗口大小和位置
-		break;
-	case WM_KILLFOCUS:
-		KillTimer(hwndPaperPlane, TIMER_ID);
-		break;
-	case WM_SETFOCUS:
-		SetTimer(hwndPaperPlane, TIMER_ID, dwTimerElapse, NULL);
 		break;
 	case WM_SIZE:
 		GetWindowRect(hwnd, &rect);
@@ -169,8 +166,7 @@ LONG BackgroundCreate(HWND hwnd)
 	SetFocus(hwnd);
 	//创建列表
 	flys_init();
-	SetTimer(hwnd, TIMER_ID, dwTimerElapse, NULL);
-
+	SetTimer(hwnd, TIMER_ID1, dwTimerElapse, NULL);
 	return 0;
 }
 LONG BackgroundPaint(HWND hwnd)
@@ -209,11 +205,10 @@ LONG BackgroundPaint(HWND hwnd)
 }
 LONG BackgroundResizeAndMove(HWND hwnd, LPRECT lpRect)
 {
-	SetWindowPos(hwndPaperPlane, HWND_TOPMOST,
-		(lpRect->left + lpRect->right - PAPERPLANE_WIDTH) / 2,
-		lpRect->bottom - PAPERPLANE_HEIGHT,
-		PAPERPLANE_WIDTH,
-		PAPERPLANE_HEIGHT,
+	SetWindowPos(hwndPaperPlane, HWND_TOPMOST, 
+		lpRect->left, lpRect->top,
+		lpRect->right - lpRect->left, 
+		lpRect->bottom - lpRect->top, 
 		SWP_SHOWWINDOW);
 
 	SetFocus(hwnd);
@@ -285,6 +280,7 @@ LRESULT CALLBACK FlysProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		break;
 	case WM_TIMER:
 		FlysPaint(hwnd);
+		break;
 	case WM_DESTROY:
 		PostQuitMessage(0);
 		break;
@@ -303,7 +299,7 @@ LONG FlysCreate(HWND hwnd)
 			MB_OK | MB_ICONERROR);
 		ExitProcess(0);
 	}
-
+	SetTimer(hwnd, TIMER_ID2, dwTimerElapse, NULL);
 	return 0;
 }
 LONG FlysPaint(HWND hwnd)
@@ -420,6 +416,7 @@ LONG CloudWindowCreate(HINSTANCE hinstance)
 	{
 		DWORD dwError = GetLastError();
 	}
+
 	ShowWindow(hwndCloud, SW_SHOW);
 	UpdateWindow(hwndCloud);
 
@@ -461,6 +458,8 @@ LONG CloudsCreate(HWND hwnd)
 			MB_OK | MB_ICONERROR);
 		ExitProcess(0);
 	}
+
+	SetTimer(hwnd, TIMER_ID3, dwTimerElapse, NULL);
 
 	return 0;
 }

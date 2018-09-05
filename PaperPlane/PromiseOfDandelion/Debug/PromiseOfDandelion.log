@@ -1,4 +1,2 @@
 ﻿  UI.cpp
-g:\git\repository\paperplane\promiseofdandelion\ui.cpp(312): warning C4101: “mdc_”: 未引用的局部变量
-g:\git\repository\paperplane\promiseofdandelion\ui.cpp(313): warning C4101: “hBitmap”: 未引用的局部变量
   PromiseOfDandelion.vcxproj -> G:\Git\repository\PaperPlane\Debug\PaperPlane.exe
