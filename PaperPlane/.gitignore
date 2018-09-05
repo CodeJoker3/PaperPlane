@@ -1,5 +1,5 @@
 #忽略Debug
 Debug/*
-/Debug/*
+PromiseOfDandelion/Debug/*
 #忽略.vs
 .vs/*
